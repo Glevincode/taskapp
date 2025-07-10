@@ -280,7 +280,7 @@ const handleAddNewCategory = () => {
     iconLib: 'Ionicons',
   };
 
-  setAllCategories(prev => [category, ...prev]);  // ✅ Add to the shared state
+  setAllCategories(prev => [category, ...prev]);  
 
   setNewCategoryName('');
   setNewCategoryColor('#6C63FF');
@@ -297,17 +297,10 @@ const filteredIcons = categoriesIcons.filter(icon =>
   
 );
 
-
-
   return (
-      <KeyboardAvoidingView
-  style={{ flex: 1, backgroundColor:cardColor }}
- behavior={Platform.OS === 'ios' ? 'padding' : 'position'}
-
->
-
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor:cardColor }}>
     <ScrollView
-      contentContainerStyle={[styles.container, { backgroundColor: bgColor }]}
+      contentContainerStyle={[styles.container, { backgroundColor: bgColor,flexGrow: 1, justifyContent: 'space-between' }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       keyboardShouldPersistTaps="handled"
     >
