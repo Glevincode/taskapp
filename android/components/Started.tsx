@@ -9,78 +9,89 @@ import {
   Modal,
   Pressable,
   TextInput,
+  useWindowDimensions,
+  SafeAreaView,
+  ScrollView
 } from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import FingerprintScanner from 'react-native-fingerprint-scanner';
 import Spinner from 'react-native-loading-spinner-overlay';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from './ThemeContext';
 
-
 function Started() {
+  const { width, height } = useWindowDimensions();
+  const navigation = useNavigation();
+  const { darkMode } = useTheme();
+
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [signUpUsername, setSignUpUsername] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpRetypePassword, setSignUpRetypePassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [signUpError, setSignUpError] = useState('');
-  const imageTranslateY = useRef(new Animated.Value(-100)).current;
-  const textTranslateY = useRef(new Animated.Value(100)).current;
-  const [showText, setShowText] = useState(false);
-  const navigation = useNavigation();
+  const [accountExists, setAccountExists] = useState(false);
+  const [isFingerprintAvailable, setIsFingerprintAvailable] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loginPasswordVisible, setLoginPasswordVisible] = useState(false);
   const [signUpPasswordVisible, setSignUpPasswordVisible] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [accountExists, setAccountExists] = useState(false);
-  const isFocused = useIsFocused();
-  const [signUpRetypePassword, setSignUpRetypePassword] = useState('');
   const [signUpRetypePasswordVisible, setSignUpRetypePasswordVisible] = useState(false);
-  const [isFingerprintAvailable, setIsFingerprintAvailable] = useState(false);
   const [justSignedUp, setJustSignedUp] = useState(false);
+  const [showText, setShowText] = useState(false);
 
- 
+  const imageTranslateY = useRef(new Animated.Value(-100)).current;
+  const textTranslateY = useRef(new Animated.Value(100)).current;
 
-useEffect(() => {
-  FingerprintScanner
-    .isSensorAvailable()
-    .then(() => setIsFingerprintAvailable(true))
-    .catch(() => setIsFingerprintAvailable(false));
+  const isFocused = useIsFocused();
 
-  // Optional: cleanup
-  return () => {
-    FingerprintScanner.release();
-  };
-}, []);
-
+  const bgColor = darkMode ? '#0f172a' : '#F9F9F9';
+  const textColor = darkMode ? '#fff' : '#333';
+  const cardColor = darkMode ? '#1f2937' : '#FFFFFF';
+  const buttonColor = darkMode ? '#7c3aed' : '#6C63FF';
+  const signColor = darkMode ? '#16a34a' : '#22c55e';
 
   useEffect(() => {
-    Animated.timing(imageTranslateY, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
-    
+    FingerprintScanner.isSensorAvailable()
+      .then(() => setIsFingerprintAvailable(true))
+      .catch(() => setIsFingerprintAvailable(false));
+    return () => {
+      FingerprintScanner.release();
+    };
+  }, []);
 
+  useEffect(() => {
+    Animated.timing(imageTranslateY, { toValue: 1, duration: 1000, useNativeDriver: true }).start();
     const timer = setTimeout(() => {
       setShowText(true);
-      Animated.timing(textTranslateY, {
-        toValue: 0,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(textTranslateY, { toValue: 0, duration: 1000, useNativeDriver: true }).start();
     }, 1000);
-
-
-
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const checkAccount = async () => {
+      const username = await AsyncStorage.getItem('username');
+      const password = await AsyncStorage.getItem('password');
+      setAccountExists(!!username && !!password);
+    };
+    checkAccount();
+  }, [showSignUpModal, isFocused]);
+
+  useEffect(() => {
+    AsyncStorage.getItem('rememberMe').then(val => {
+      if (val === 'true') setRememberMe(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (accountExists && !showSignUpModal && !justSignedUp) handleFingerprintAuth();
+  }, [accountExists, showSignUpModal, justSignedUp]);
 
   const handleFingerprintAuth = () => {
     FingerprintScanner.authenticate({
@@ -91,109 +102,73 @@ useEffect(() => {
         FingerprintScanner.release();
         setLoading(true);
         setTimeout(() => {
-          navigation.navigate('LandingPage' as never);
+           navigation.navigate('LandingPage' as never);
           setLoading(false);
         }, 2000);
       })
-      .catch((error) => {
+      .catch(error => {
         FingerprintScanner.release();
         Alert.alert('Authentication Failed', error.message);
       });
   };
 
-  // Login handler
   const handleLogin = async () => {
     const storedUsername = await AsyncStorage.getItem('username');
     const storedPassword = await AsyncStorage.getItem('password');
-    if (
-      loginUsername === storedUsername &&
-      loginPassword === storedPassword &&
-      loginUsername !== ''
-    ) {
+    if (loginUsername === storedUsername && loginPassword === storedPassword && loginUsername !== '') {
       setLoginError('');
       setShowLoginModal(false);
       setLoading(true);
-      if (rememberMe) {
-        await AsyncStorage.setItem('rememberMe', 'true');
-      } else {
-        await AsyncStorage.removeItem('rememberMe');
-      }
+      if (rememberMe) await AsyncStorage.setItem('rememberMe', 'true');
+      else await AsyncStorage.removeItem('rememberMe');
       setTimeout(() => {
         navigation.navigate('LandingPage' as never);
         setLoading(false);
       }, 1500);
-    } else {
-      setLoginError('Invalid username or password');
-    }
+    } else setLoginError('Invalid username or password');
   };
 
-  // On mount, check remember me
-  useEffect(() => {
-    AsyncStorage.getItem('rememberMe').then(val => {
-      if (val === 'true') setRememberMe(true);
-    });
-  }, []);
-
-
-  // Sign Up handler
- const handleSignUp = async () => {
-  if (!signUpUsername || !signUpPassword || !signUpRetypePassword) {
-    setSignUpError('Please fill all fields');
-    return;
-  }
-  if (signUpPassword !== signUpRetypePassword) {
-    setSignUpError('Passwords do not match');
-    return;
-  }
-  await AsyncStorage.setItem('username', signUpUsername);
-  await AsyncStorage.setItem('password', signUpPassword);
-  setSignUpError('');
-  setShowSignUpModal(false);
-  setLoading(true);
-  setJustSignedUp(true); // set flag
-  setTimeout(() => {
-    navigation.navigate('LandingPage' as never);
-    setLoading(false);
-  }, 1500);
-};
-
-  useEffect(() => {
-    const checkAccount = async () => {
-      const username = await AsyncStorage.getItem('username');
-      const password = await AsyncStorage.getItem('password');
-      setAccountExists(!!username && !!password);
-    };
-    checkAccount();
-  }, [showSignUpModal, isFocused]); // re-check after sign up or when s
+  const handleSignUp = async () => {
+    if (!signUpUsername || !signUpPassword || !signUpRetypePassword) {
+      setSignUpError('Please fill all fields');
+      return;
+    }
+    if (signUpPassword !== signUpRetypePassword) {
+      setSignUpError('Passwords do not match');
+      return;
+    }
+    await AsyncStorage.setItem('username', signUpUsername);
+    await AsyncStorage.setItem('password', signUpPassword);
+    setSignUpError('');
+    setShowSignUpModal(false);
+    setLoading(true);
+    setJustSignedUp(true);
+    setTimeout(() => {
+       navigation.navigate('LandingPage' as never);
+      setLoading(false);
+    }, 1500);
+  };
 
   const handleResetAccount = async () => {
-  await AsyncStorage.removeItem('username');
-  await AsyncStorage.removeItem('password');
-  await AsyncStorage.removeItem('rememberMe');
-  setAccountExists(false);
-  setLoginUsername(''); 
-  setLoginPassword('');
-  setSignUpUsername('');
-  setSignUpPassword('');
-  Alert.alert('Account Reset', 'Your account has been reset.');
-};
+    await AsyncStorage.removeItem('username');
+    await AsyncStorage.removeItem('password');
+    await AsyncStorage.removeItem('rememberMe');
+    setAccountExists(false);
+    setLoginUsername('');
+    setLoginPassword('');
+    setSignUpUsername('');
+    setSignUpPassword('');
+    Alert.alert('Account Reset', 'Your account has been reset.');
+  };
 
-useEffect(() => {
-  if (accountExists && !showSignUpModal && !justSignedUp) {
-    handleFingerprintAuth();
-  }
-}, [accountExists, showSignUpModal, justSignedUp]);
-
-
-const { darkMode } = useTheme();
-
- const bgColor = darkMode ? '#0f172a' : '#F9F9F9';
-  const textColor = darkMode ? '#fff' : '#333';
-  const cardColor = darkMode ? '#1f2937' : '#FFFFFF';
-  const buttonColor = darkMode ? '#7c3aed' : '#6C63FF';
-  const signColor = darkMode ? '#16a34a' : '#22c55e';
+  const imageSize = width * 0.65;
+  const buttonWidth = width * 0.8;
+  const modalWidth = width * 0.9;
+  const fontSizeLarge = width * 0.06;
+  const fontSizeSmall = width * 0.04;
 
   return (
+     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
     <View style={{...styles.container, backgroundColor: bgColor}}>
       <View style={styles.ImageWrapper}>
         <TouchableOpacity
@@ -204,15 +179,15 @@ const { darkMode } = useTheme();
           </TouchableOpacity>
                   <Animated.Image
           source={require('../assets/image1.png')}
-          style={[styles.image, { transform: [{ translateY: imageTranslateY }] }]}
+          style={[styles.image, { transform: [{ translateY: imageTranslateY }], width: imageSize}]}
           resizeMode="contain"
         />
         {showText && (
           <Animated.View style={[styles.textBlock, { transform: [{ translateY: textTranslateY }] }]}>
-            <Text style={[styles.textWrapper, { color: textColor }]}>Boost Your Productivity,</Text>
-            <Text style={[styles.textWrapper, { color: textColor }]}>Finish Tasks Smarter</Text>
-            <Text style={[styles.textTittleWrapper1, { color: textColor }]}>Organize, track, and prioritize your tasks</Text>
-            <Text style={[styles.textTittleWrapper, { color: textColor }]}>anytime, anywhere with TaskApp</Text>
+            <Text style={[styles.textWrapper, { color: textColor, fontSize: fontSizeLarge }]}>Boost Your Productivity,</Text>
+            <Text style={[styles.textWrapper, { color: textColor,fontSize: fontSizeLarge }]}>Finish Tasks Smarter</Text>
+            <Text style={[styles.textTittleWrapper1, { color: textColor,fontSize: fontSizeSmall }]}>Organize, track, and prioritize your tasks</Text>
+            <Text style={[styles.textTittleWrapper, { color: textColor,fontSize: fontSizeSmall }]}>anytime, anywhere with TaskApp</Text>
           </Animated.View>
         )}
       </View>
@@ -232,7 +207,7 @@ const { darkMode } = useTheme();
   isFingerprintAvailable ? (
     <TouchableOpacity
       onPress={handleFingerprintAuth}
-      style={[styles.button,{backgroundColor: buttonColor}]}
+      style={[styles.button,{backgroundColor: buttonColor, width: buttonWidth}]}
     >
       <Text style={styles.textTittle}>
         Unlock with Fingerprint
@@ -243,7 +218,7 @@ const { darkMode } = useTheme();
       onPress={() => setShowLoginModal(true)}
       style={[
         styles.button,
-        { backgroundColor: '#007AFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }
+        { backgroundColor: '#007AFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: buttonWidth }
       ]}
     >
       <Feather name="log-in" size={20} color="#fff" style={{ marginRight: 10 }} />
@@ -257,7 +232,7 @@ const { darkMode } = useTheme();
   <>
     <TouchableOpacity
       onPress={() => setShowLoginModal(true)}
-      style={[styles.button, { marginTop: 20, backgroundColor: buttonColor , flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
+      style={[styles.button, { marginTop: 20, backgroundColor: buttonColor , flexDirection: 'row', alignItems: 'center', justifyContent: 'center', }]}
     >
       <Feather name="log-in" size={20} color="#fff" style={{ marginRight: 10 }} />
       <Text style={styles.textTittle}>Login</Text>
@@ -279,7 +254,7 @@ const { darkMode } = useTheme();
         onRequestClose={() => setShowLoginModal(false)}
       >
         <View style={styles.modalBackground}>
-          <View style={[styles.modalContainer,{backgroundColor:cardColor}]}>
+          <View style={[styles.modalContainer,{backgroundColor:cardColor, width: buttonWidth}]}>
             <Text style={[styles.modalTitle,{color: textColor}]}>Login</Text>
             {loginError ? (
               <Text style={{ color: 'red', marginBottom: 10 }}>{loginError}</Text>
@@ -302,7 +277,7 @@ const { darkMode } = useTheme();
               
               value={loginUsername}
               onChangeText={setLoginUsername}
-             style={[styles.input, { paddingLeft: 48, color: textColor }]}
+             style={[styles.input, { color: textColor || '#000', paddingLeft: 45 }]} 
               placeholderTextColor="#9ca3af"
               accessibilityLabel="Username input field"
               autoCapitalize="none"
@@ -326,7 +301,7 @@ const { darkMode } = useTheme();
                 value={loginPassword}
                 onChangeText={setLoginPassword}
                  placeholderTextColor="#9ca3af"
-               style={[styles.input, { paddingLeft: 48, color: textColor }]}
+                style={[styles.input, { color: textColor || '#000', paddingLeft: 45 }]} 
                 secureTextEntry={!loginPasswordVisible}
                 onSubmitEditing={handleLogin}
 
@@ -398,7 +373,7 @@ const { darkMode } = useTheme();
         onRequestClose={() => setShowSignUpModal(false)}
       >
         <View style={styles.modalBackground}>
-          <View style={[styles.modalContainer, {backgroundColor: cardColor}]}>
+          <View style={[styles.modalContainer, {backgroundColor: cardColor, width: buttonWidth}]}>
             <Text style={[styles.modalTitle,{color: textColor}]}>Sign Up</Text>
             {signUpError ? (
               <Text style={{ color: 'red', marginBottom: 10 }}>{signUpError}</Text>
@@ -420,7 +395,7 @@ const { darkMode } = useTheme();
                   placeholder="Username"
                   value={signUpUsername}
                   onChangeText={setSignUpUsername}
-                  style={[styles.input, { paddingLeft: 48 ,color: textColor }]} 
+                 style={[styles.input, { color: textColor || '#000', paddingLeft: 45 }]}  
                   autoCapitalize="none"
                   placeholderTextColor="#9ca3af"
                 
@@ -442,7 +417,7 @@ const { darkMode } = useTheme();
                 placeholder="Password"
                 value={signUpPassword}
                 onChangeText={setSignUpPassword}
-                 style={[styles.input, { paddingLeft: 48, color: textColor }]} 
+                style={[styles.input, { color: textColor || '#000', paddingLeft: 45 }]} 
                   placeholderTextColor="#9ca3af"
                 secureTextEntry={!signUpPasswordVisible}
                 onSubmitEditing={handleSignUp}
@@ -471,7 +446,7 @@ const { darkMode } = useTheme();
                   placeholder="Retype Password"
                   value={signUpRetypePassword}
                   onChangeText={setSignUpRetypePassword}
-                  style={[styles.input, { paddingLeft: 48, color: textColor }]}
+                   style={[styles.input, { color: textColor || '#000', paddingLeft: 45 }]} 
                   placeholderTextColor="#9ca3af"
                   secureTextEntry={!signUpRetypePasswordVisible}
                   onSubmitEditing={handleSignUp}
@@ -490,7 +465,7 @@ const { darkMode } = useTheme();
               </View>
               <Pressable
                 onPress={handleSignUp}
-                style={[styles.Authbutton, { marginTop: 10, backgroundColor: buttonColor }]}
+                style={[styles.Authbutton, { marginTop: 10, backgroundColor: buttonColor,  }]}
               >
                 <Text style={styles.textSignIn}>Sign Up</Text>
               </Pressable>
@@ -510,23 +485,20 @@ const { darkMode } = useTheme();
           </View>
         </Modal>
       </View>
+      </SafeAreaView>
     );
   }
+  
 
 const styles = StyleSheet.create({
-  container: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
-    backgroundColor: '#F9F9F9',
-    padding: 20,
+ container: {
+  flex: 1,
+   paddingHorizontal: '5%' 
   },
-  ImageWrapper: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    marginBottom: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
+ ImageWrapper: { flex: 1,
+   justifyContent: 'center',
+    alignItems: 'center' 
+  
   },
   textWrapper: {
     textAlign: 'center',
@@ -536,28 +508,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     
   },
-  resetWrapper: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: '#FF6B6B',
-    padding: 10,
-    borderRadius: 20,
-    height: 33,
-  },
-  
+   resetWrapper: {
+     position: 'absolute',
+      top: '5%', right: '5%',
+       padding: 8, 
+       borderRadius: 20 },
   iconStyle: {
     position: 'absolute',
     top: 90,
     left: 40,
     zIndex: 10,
   },
-  textAccount: {
-    color: '#FFF',
-    fontSize: 12,
-    fontFamily: 'Montserrat-Regular',
-    paddingHorizontal: 15,
-  },
+ textAccount: {
+   color: '#fff',
+    fontSize: 12 },
+
   textTittleWrapper1: {
     textAlign: 'center',
     fontSize: 15,
@@ -582,17 +547,18 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   image: {
-    width: 350,
+    
     height: 350,
   },
-  button: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 50,
-    paddingVertical: 15,
-    top: 250,
-    width: 300,
-  },
+   button: {
+     alignItems: 'center',
+      justifyContent: 'center', 
+      borderRadius: 30,
+       paddingVertical: 15,
+      flexDirection: 'row',
+      bottom: 100,
+     },
+
   Authbutton: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -600,7 +566,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
      
     top: 10,
-    width: 280,
     backgroundColor: '#6C63FF',
   },
   textSignIn: {
@@ -619,38 +584,31 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Regular',
     
   },
-  textBlock: {
+   textBlock: { 
     alignItems: 'center',
-    marginBottom: 40,
-    paddingHorizontal: 20,
-    opacity: 0.9,
-    
-  },
+     marginTop: '5%'
+     },
   modalBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 30,
-    alignItems: 'center',
-    width: '80%',
-  },
+     flex: 1, backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+       alignItems: 'center' },
+
+ modalContainer: {
+   borderRadius: 20,
+    padding: 20
+   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    textAlign: 'center',
   },
   input: {
-    width: '100%',
     height: 50,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 10,
-    paddingHorizontal: 15,
+    
     marginTop: 15,
     fontSize: 16,
     color: '#000',
