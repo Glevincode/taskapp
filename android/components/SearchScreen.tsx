@@ -7,10 +7,11 @@ import {
   SafeAreaView,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Feather from 'react-native-vector-icons/Feather';
-import { useTheme } from './ThemeContext'; 
+import { useTheme } from './ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -18,14 +19,22 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [allTasks, setAllTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
-  const navigation = useNavigation()
-
+  const navigation = useNavigation();
+  const { width } = useWindowDimensions();
   const { darkMode } = useTheme();
 
+  // Colors
   const bgColor = darkMode ? '#0f172a' : '#F5F7FA';
   const cardColor = darkMode ? '#1f2937' : '#fff';
   const textColor = darkMode ? '#fff' : '#333';
   const inputBg = darkMode ? '#374151' : '#f2f2f2';
+
+  // Responsive font sizes
+  const headerFontSize = width * 0.045;  // ~18 on standard screens
+  const searchFontSize = width * 0.04;   // ~16
+  const taskTitleFontSize = width * 0.04;
+  const taskDateFontSize = width * 0.03;
+  const iconSize = width * 0.06 + 10;    // Responsive icon size
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -45,63 +54,97 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
-      <View style={styles.header}>
-       <TouchableOpacity
-  style={styles.arrowBack}
-  onPress={() => {
-    setQuery('');
-    navigation.goBack();
-  }}
->
-  <Ionicons name="chevron-back-sharp" size={30} color={textColor} />
-</TouchableOpacity>
+      
+      {/* Header */}
+     <View style={[styles.header, { paddingTop: width * 0.12, paddingHorizontal: width * 0.05 }]}>
+  
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    
+    <TouchableOpacity
+      style={{ padding: width * 0.01 }}  // touch area without absolute position
+      onPress={() => {
+        setQuery('');
+        navigation.goBack();
+      }}
+    >
+      <Ionicons name="chevron-back-sharp" size={iconSize} color={textColor} />
+    </TouchableOpacity>
+
+    <View style={{ flex: 1, marginLeft: width * 0.03 }}>
+      <TextInput
+        style={[
+          styles.searchInput,
+          {
+            backgroundColor: inputBg,
+            color: textColor,
+            fontSize: searchFontSize,
+            width: '100%',
+            paddingVertical: width * 0.045,
+          },
+        ]}
+        placeholder="Search tasks..."
+        placeholderTextColor="#888888"
+        value={query}
+        onChangeText={setQuery}
+        autoFocus
+      />
+    </View>
+
+  </View>
+
+</View>
 
 
-      <View style={styles.searchWrapper}>
-        <TextInput
-          style={[
-            styles.searchInput,
-            { backgroundColor: inputBg, color: textColor },
-          ]}
-          placeholder="Search tasks..."
-          placeholderTextColor="#888888"
-          value={query}
-          onChangeText={setQuery}
-          autoFocus
+      {/* Results */}
+      {query.trim().length > 0 && (
+        <FlatList
+          data={filteredTasks}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{
+            paddingHorizontal: width * 0.045,
+            paddingBottom: width * 0.1,
+          }}
+          renderItem={({ item }) => (
+            <View style={[styles.taskItem, { backgroundColor: cardColor, padding: width * 0.03 }]}>
+              <View style={styles.taskInfo}>
+                <View
+                  style={[
+                    styles.taskIcon,
+                    {
+                      backgroundColor: item.categoryColor || '#fca5a5',
+                      width: width * 0.13,
+                      height: width * 0.13,
+                      borderRadius: width * 0.065,
+                      marginRight: width * 0.03,
+                    },
+                  ]}
+                >
+                  <Feather name={item.categoryIcon || 'list'} size={iconSize} color="#fff" />
+                </View>
+                <View>
+                  <Text style={[styles.taskTitle, { color: textColor, fontSize: taskTitleFontSize }]}>
+                    {item.description || 'No Description'}
+                  </Text>
+                  <Text style={[styles.taskDate, { color: textColor, fontSize: taskDateFontSize }]}>
+                    {item.date} {item.time}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+          ListEmptyComponent={
+            <Text style={{
+              color: textColor,
+              textAlign: 'center',
+              marginTop: width * 0.15,
+              fontSize: taskDateFontSize + 1,
+              fontStyle: 'italic'
+            }}>
+              No tasks found.
+            </Text>
+          }
         />
-      </View>
-         </View>
-
-    {query.trim().length > 0 && (
-  <FlatList
-    data={filteredTasks}
-    keyExtractor={(item) => item.id}
-    contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 20 }}
-    renderItem={({ item }) => (
-      <View style={[styles.taskItem, { backgroundColor: cardColor }]}>
-        <View style={styles.taskInfo}>
-          <View style={[styles.taskIcon, { backgroundColor: item.categoryColor || '#fca5a5' }]}>
-            <Feather name={item.categoryIcon || 'list'} size={24} color="#fff" />
-          </View>
-          <View>
-            <Text style={[styles.taskTitle, { color: textColor }]}>
-              {item.description || 'No Description'}
-            </Text>
-            <Text style={[styles.taskDate, { color: textColor }]}>
-              {item.date} {item.time}
-            </Text>
-          </View>
-        </View>
-      </View>
-    )}
-    ListEmptyComponent={
-      <Text style={{ color: textColor, textAlign: 'center', marginTop: 50, fontStyle: 'italic' }}>
-        No tasks found.
-      </Text>
-    }
-  />
-)}
-
+      )}
     </SafeAreaView>
   );
 }
@@ -111,39 +154,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingTop: 50,
-    paddingBottom: 10,
-    left: 15,
-
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 12,
+    flexDirection: 'column',
   },
   searchWrapper: {
-    paddingHorizontal: 18,
-    paddingBottom: 10,
+    alignItems: 'center',
   },
   searchInput: {
     borderRadius: 30,
-    padding: 12,
-    fontSize: 16,
-    width: 340,
-    paddingVertical: 20,
-
+    paddingHorizontal: 20,
   },
-  arrowBack:{
-  bottom: 35,
-  position: 'absolute',
-  
+  arrowBack: {
+    position: 'absolute',
+    left: 15,
   },
   taskItem: {
     borderRadius: 20,
-    padding: 12,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,21 +182,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   taskIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#fca5a5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   taskTitle: {
-    fontSize: 15,
     fontWeight: '600',
   },
-  taskDate: {
-    fontSize: 13,
-    color: '#9ca3af',
-  },
+  taskDate: {},
 });
-

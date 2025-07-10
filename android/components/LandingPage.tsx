@@ -7,7 +7,8 @@ import {
   ScrollView, 
   SafeAreaView, 
   RefreshControl ,
-  Image
+  Image,
+  useWindowDimensions
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -15,7 +16,6 @@ import Octicons from 'react-native-vector-icons/Octicons';
 import Feather from 'react-native-vector-icons/Feather';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-
 import { useNotification } from './NotificationContext';
 import { Searchbar } from 'react-native-paper';
 import { SwipeListView } from 'react-native-swipe-list-view';
@@ -24,33 +24,19 @@ import TaskOptionsMenu from './TaskOptionsMenu';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 
-
-
-
 function LandingPage({ navigation }: { navigation: any }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [tasks, setTasks] = useState<any[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [actionModalVisible, setActionModalVisible] = useState(false);
+
   const [username, setUsername] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [profileUri, setProfileUri] = useState<string | null>(null);
 const { notifications } = useNotification();
-const [isSearching, setIsSearching] = useState(false);
+
 const notificationCount = notifications.length;
 
-
-const handleAction = (action: string) => {
-    console.log('Selected:', action);
-    setModalVisible(false);
-    // Add your action handlers here
-  };
-
-
-
- 
   const handleProfilePress = () => {
     navigation.navigate('Profile');
   };
@@ -64,10 +50,7 @@ const handleAction = (action: string) => {
     setProfileUri(uri);
   };
   fetchProfileUri();
-  
 
-
-  // Optional: Listen for focus to update image after returning from Profile screen
   const unsubscribe = navigation.addListener('focus', fetchProfileUri);
   return unsubscribe;
 }, [navigation]);
@@ -81,8 +64,6 @@ const handleAction = (action: string) => {
     fetchCredentials();
   }, []);
 
-
-  
   const { addNotification } = useNotification();
 
   // Add handleEdit function
@@ -92,7 +73,7 @@ const handleAction = (action: string) => {
 
 const handleDelete = () => {
   if (selectedTaskId) {
-    const taskToDelete = tasks.find(task => task.id === selectedTaskId); // ✅ Get task info
+    const taskToDelete = tasks.find(task => task.id === selectedTaskId); 
     const updated = tasks.filter(task => task.id !== selectedTaskId);
     setTasks(updated);
     AsyncStorage.setItem('tasks', JSON.stringify(updated));
@@ -105,10 +86,9 @@ const handleDelete = () => {
     id: Date.now().toString(),
     message: `Task "${taskToDelete.description}" was deleted`,
     date: new Date().toLocaleString(),
-    icon: taskToDelete.icon || 'trash-outline',  // ✅ Use task's icon or default to trash icon
+    icon: taskToDelete.icon || 'trash-outline',  
   });
 }
-
 
   }
 };
@@ -189,15 +169,6 @@ const searchedTasks = searchQuery.trim()
   const work = getCategoryIconAndColor(tasksData, 'Work');
   const study = getCategoryIconAndColor(tasksData, 'Study');
 
-  const handleCategoryPress = (categoryName: string) => {
-    setSelectedCategory(categoryName);
-    setModalVisible(true);
-  };
-
-  const filteredTasks = tasks.filter(
-    t => t.categoryName === selectedCategory
-  );
-
   function renderCategoryIcon(
     iconName: string,
     iconLib: string,
@@ -233,32 +204,28 @@ const searchedTasks = searchQuery.trim()
   return diffDays;
 }
 
-// Usage in your render:
-const workDaysLeft = getDaysLeftForCategory(searchedTasks, 'Work');
-const studyDaysLeft = getDaysLeftForCategory(searchedTasks, 'Study');
-
-const personalDaysLeft = getDaysLeftForCategory(searchedTasks, 'Personal');
-
-
   const getCount = (categoryName: string) => {
     return tasks.filter(task => task.categoryName === categoryName).length;
   };
+
+    const { width } = useWindowDimensions();
+
+  const titleFontSize = width * 0.045;     
+  const subtitleFontSize = width * 0.035;
 
    const { darkMode } = useTheme();
   
     const bgColor = darkMode ? '#0f172a' : '#F5F7FA';
     const cardColor = darkMode ? '#1f2937' : '#fff';
     const textColor = darkMode ? '#fff' : '#333';
-  
-    const projectCardPurpleColor = darkMode ? '#9333ea' : '#8b5cf6';  // darker purple in dark mode
-    const projectCardPinkColor = darkMode ? '#dc2626' : '#f87171';     // 🔴 deep red in dark mode
-     const projectCardGreenColor = darkMode ? '#a80e54' : '#a80e54';
-  
-    const iconColorOrganize = { backgroundColor: darkMode ? '#65a30d' : '#84cc16' };     // lime-green → darker green
-const iconColorBoost = { backgroundColor: darkMode ? '#2563eb' : '#3b82f6' };         // blue → darker blue
-const iconColorCreate = { backgroundColor: darkMode ? '#c026d3' : '#d946ef' };        // pink → darker magenta
-const iconColorDiscover = { backgroundColor: darkMode ? '#7c3aed' : '#8b5cf6' };      // purple → deeper purple
-
+    
+    const projectCardPurpleColor = darkMode ? '#9333ea' : '#8b5cf6';  
+    const projectCardPinkColor = darkMode ? '#dc2626' : '#f87171';     
+    const projectCardGreenColor = darkMode ? '#a80e54' : '#a80e54';
+    const iconColorOrganize = { backgroundColor: darkMode ? '#65a30d' : '#84cc16' };     
+    const iconColorBoost = { backgroundColor: darkMode ? '#2563eb' : '#3b82f6' };         
+    const iconColorCreate = { backgroundColor: darkMode ? '#c026d3' : '#d946ef' };       
+    const iconColorDiscover = { backgroundColor: darkMode ? '#7c3aed' : '#8b5cf6' };    
 
 
     const taskColor = darkMode ? '#fff' : '#fff';
@@ -283,47 +250,46 @@ const iconColorDiscover = { backgroundColor: darkMode ? '#7c3aed' : '#8b5cf6' };
             </View>
           </View>
       <TouchableOpacity onPress={() => navigation.navigate('Bellnotification')} >
-  <View style={{ position: 'relative', padding: 4 }}>
-    <Feather name="bell" size={28} color="#6C63FF" />
-    {notificationCount > 0 && (
-      <View
-        style={{
-          position: 'absolute',
-          top: 2,
-          right: 2,
-          minWidth: 16,
-          height: 16,
-          borderRadius: 8,
-          backgroundColor: 'red',
-          justifyContent: 'center',
-          alignItems: 'center',
-          borderWidth: 1,
-          borderColor: '#fff',
-          paddingHorizontal: 3,
-        }}
-      >
-        <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
-          {notificationCount}
-        </Text>
-      </View>
-    )}
-  </View>
-</TouchableOpacity>
+          <View style={{ position: 'relative', padding: 4 }}>
+            <Feather name="bell" size={28} color="#6C63FF" />
+            {notificationCount > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  backgroundColor: 'red',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: '#fff',
+                  paddingHorizontal: 3,
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
+                  {notificationCount}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+                </View>
+
+
+                  <View style={styles.searchWrapper}>
+              <TouchableOpacity onPress={() => navigation.navigate('SearchScreen')}>
+          <Searchbar
+            style={[styles.searchbar, { backgroundColor: darkMode ? '#374151' : '#f2f2f2' }]}
+            placeholder="Search tasks..."
+            editable={false}  // disables typing directly
+            pointerEvents="none"  
+          />
+        </TouchableOpacity>
         </View>
 
-
-          <View style={styles.searchWrapper}>
-      <TouchableOpacity onPress={() => navigation.navigate('SearchScreen')}>
-  <Searchbar
-    style={[styles.searchbar, { backgroundColor: darkMode ? '#374151' : '#f2f2f2' }]}
-    placeholder="Search tasks..."
-    editable={false}  // disables typing directly
-    pointerEvents="none"  // disables direct touch on TextInput inside Searchbar
-  />
-</TouchableOpacity>
-</View>
-
-    
       {!searchQuery.trim() && (
         <View style={styles.categoriesWrapper}>
           <View style={styles.categoriesHeader}>
@@ -514,7 +480,6 @@ const iconColorDiscover = { backgroundColor: darkMode ? '#7c3aed' : '#8b5cf6' };
       : 'Last Task'}
   </Text>
 
-  {/* ✅ Show “See All” ONLY when there are tasks, and NOT searching */}
   {tasks.length > 0 && !searchQuery.trim() && (
     <TouchableOpacity onPress={() => navigation.navigate('CategoriesScreen', { tasks })}>
       <Text style={styles.seeAllText}>See All</Text>
@@ -523,59 +488,61 @@ const iconColorDiscover = { backgroundColor: darkMode ? '#7c3aed' : '#8b5cf6' };
 </View>
 
             {/* ✅ Show this when there are no tasks */}
-{!searchQuery.trim() && tasks.length === 0 && (
-  <View style={styles.emptyTasksContainer}>
+   {!searchQuery.trim() && tasks.length === 0 && (
+        <View style={styles.emptyTasksContainer}>
 
-    {/* Card 1: Organize */}
-    <View style={[styles.taskBox, { backgroundColor: cardColor }]}>
-      <View style={[styles.iconCircle, iconColorOrganize]}>
-        <Ionicons name="calendar-outline" size={28} color={taskColor} />
-      </View>
-      <Text style={[styles.taskBoxTitle, { color: textColor }]}>Organize Your Day</Text>
-      <Text style={[styles.taskBoxSubtitle, { color: textColor }]}>
-        Plan your daily tasks and stay focused.
-      </Text>
-    </View>
+          {/* Card 1 */}
+          <View style={[styles.taskBox, { backgroundColor: cardColor }]}>
+            <View style={[styles.iconCircle, iconColorOrganize]}>
+              <Ionicons name="calendar-outline" size={28} color={taskColor} />
+            </View>
+            <Text style={[styles.taskBoxTitle, { color: textColor, fontSize: titleFontSize }]}>Organize Your Day</Text>
+            <Text style={[styles.taskBoxSubtitle, { color: textColor, fontSize: subtitleFontSize }]}>
+              Plan your daily tasks and stay focused.
+            </Text>
+          </View>
 
-    {/* Card 2: Productivity */}
-    <View style={[styles.taskBox, { backgroundColor: cardColor }]}>
-       <View style={[styles.iconCircle, iconColorBoost]}>
-        <MaterialCommunityIcons name="rocket-launch-outline" size={28} color={taskColor} />
-      </View>
-      <Text style={[styles.taskBoxTitle, { color: textColor }]}>Boost Productivity</Text>
-      <Text style={[styles.taskBoxSubtitle, { color: textColor }]}>
-        Track and finish tasks to stay motivated.
-      </Text>
-    </View>
+          {/* Card 2 */}
+          <View style={[styles.taskBox, { backgroundColor: cardColor }]}>
+            <View style={[styles.iconCircle, iconColorBoost]}>
+              <MaterialCommunityIcons name="rocket-launch-outline" size={28} color={taskColor} />
+            </View>
+            <Text style={[styles.taskBoxTitle, { color: textColor, fontSize: titleFontSize }]}>Boost Productivity</Text>
+            <Text style={[styles.taskBoxSubtitle, { color: textColor, fontSize: subtitleFontSize }]}>
+              Track and finish tasks to stay motivated.
+            </Text>
+          </View>
 
-    {/* Card 3: Add Task */}
-    <TouchableOpacity onPress={() => navigation.navigate('AddTask')}>
-      <View style={[styles.taskBox, { backgroundColor: cardColor }]}>
-        <View style={[styles.iconCircle, iconColorCreate]}>
-          <Ionicons name="add-circle-outline" size={28} color={taskColor} />
+          {/* Card 3 */}
+          <TouchableOpacity onPress={() => navigation.navigate('AddTask')}>
+            <View style={[styles.taskBox, { backgroundColor: cardColor }]}>
+              <View style={[styles.iconCircle, iconColorCreate]}>
+                <Ionicons name="add-circle-outline" size={28} color={taskColor} />
+              </View>
+              <Text style={[styles.taskBoxTitle, styles.taskBoxContent, { color: textColor, fontSize: titleFontSize }]}>Create Your First Task</Text>
+              <Text style={[styles.taskBoxSubtitle, { color: textColor, fontSize: subtitleFontSize }]}>
+                Tap here to get started and achieve more!
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Card 4 */}
+          <TouchableOpacity onPress={() => navigation.navigate('AboutApp')}>
+            <View style={[styles.taskBox, { backgroundColor: cardColor }]}>
+              <View style={[styles.iconCircle, iconColorDiscover]}>
+                <Ionicons name="sparkles-outline" size={28} color={taskColor} />
+              </View>
+              <Text style={[styles.taskBoxTitle, { color: textColor, fontSize: titleFontSize }]}>Discover TaskApp</Text>
+              <Text style={[styles.taskBoxSubtitle, styles.tasktitle, { color: textColor, fontSize: subtitleFontSize }]}>
+                Unlock powerful tools to boost your productivity journey!
+              </Text>
+            </View>
+          </TouchableOpacity>
+
         </View>
-        <Text style={[styles.taskBoxTitle, styles.taskBoxContent, { color: textColor }]}>Create Your First Task</Text>
-        <Text style={[styles.taskBoxSubtitle, { color: textColor }]}>
-          Tap here to get started and achieve more!
-        </Text>
-      </View>
-    </TouchableOpacity>
-    <TouchableOpacity onPress={() => navigation.navigate('AboutApp')}>
-      <View style={[styles.taskBox, { backgroundColor: cardColor }]}>
-        <View style={[styles.iconCircle, iconColorDiscover]}>
-          <Ionicons name="sparkles-outline" size={28} color={taskColor} />
-        </View>
-        <Text style={[styles.taskBoxTitle,styles.taskBoxAdjust, { color: textColor }]}>Discover TaskApp Features</Text>
-        <Text style={[styles.taskBoxSubtitle, styles. tasktitle, { color: textColor }]}>
-          Unlock powerful tools to boost your productivity journey!
-        </Text>
-      </View>
-    </TouchableOpacity>
-
-  </View>
-)}
-       </>
-   );
+      )}
+    </>
+  );
  return (
      <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
         <SwipeListView
@@ -643,372 +610,367 @@ const iconColorDiscover = { backgroundColor: darkMode ? '#7c3aed' : '#8b5cf6' };
                       
                     </SafeAreaView>
                   );
-                }
+                 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-     backgroundColor: '#F5F7FA',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 40,
-    backgroundColor: '#F5F7FA',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 8,
-    top: 15,
-  },
+            const styles = StyleSheet.create({
+              safeArea: {
+                flex: 1,
+                backgroundColor: '#F5F7FA',
+              },
+              scrollContent: {
+                flexGrow: 1,
+                paddingBottom: 40,
+                backgroundColor: '#F5F7FA',
+              },
+              headerRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 18,
+                paddingTop: 18,
+                paddingBottom: 8,
+                top: 15,
+              },
 
-  searchbar:{
-    width: '90%',
-  },
-  searchWrapper:{
-    top: 27,
-    left: 17,
-  },
-
-
-   
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  projectImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    marginTop: 10,
-    alignSelf: 'center',
-    position: 'absolute',
-    top: 20,
-      
-    marginBottom: 10,
-  },
-  userIcon: {
-    backgroundColor: '#fca5a5',
-    borderRadius: 50,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  greeting: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  greetingBold: {
-    fontWeight: '700',
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: '#9ca3af',
-  },
-  bellIcon: {
-    marginLeft: 10,
-  },
-  
-  
-  categoriesWrapper: {
-    marginTop: 60,
-    marginHorizontal: 18,
-  },
-  categoriesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  categoriesTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  seeAllText: {
-    fontSize: 14,
-    color: '#6C63FF',
-    fontWeight: 'bold',
-  },
-  projectsContainer: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  projectCard: {
-    borderRadius: 24,
-    padding: 16,
-    width: 165,
-    height: 165,
-    marginRight: 16,
-    justifyContent: 'space-between',
-  },
-  projectCardPurple: {
-    backgroundColor: '#8b5cf6',
-  },
-  projectCardPink: {
-    backgroundColor: '#f87171',
-  },
-  projectCardGreen: {
-    backgroundColor: '#a80e54',
-  },
-  daysLeftContainer: {
-    backgroundColor: 'rgba(196, 181, 253, 0.4)',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    marginBottom: 6,
-    left: 75,
-  },
-  daysLeftTextPurple: {
-    fontSize: 10,
-    color: '#c4b5fd',
-    left: 5,
-  },
-  daysLeftTextPink: {
-    fontSize: 10,
-    color: '#fca5a5',
-    
-  },
-  userCategoryWrapper: {
-    marginLeft: 8,
-  },
-  projectTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    marginVertical: 12,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  progressCircles: {
-    flexDirection: 'row',
-    width: 40,
-    justifyContent: 'space-between',
-    marginRight: 6,
-    
-  },
-  progressText: {
-    fontSize: 10,
-    color: '#c4b5fd',
-    marginLeft: 4,
-    marginRight: 4,
-    
-    
-  },
-  progressTextPink: {
-    fontSize: 10,
-    color: '#fca5a5',
-    marginLeft: 4,
-    marginRight: 4,
-    top: 10,
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginLeft: 6,
-    marginRight: 6,
-    flex: 1,
-  },
-  progressBar: {
-    height: 8,
-    borderRadius: 8,
-  },
-  lastTaskWrapper: {
-    marginTop: 30,
-    marginHorizontal: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  
-  },
-  lastTaskTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 10,
-  },
-  taskItem: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 12,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    top: 10,
-    marginBottom: 12,
-    marginHorizontal: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  taskInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-
-  menuWrapper: {
-  position: 'absolute',
-  top: 15,
-  right: 10,
-  zIndex: 10,
-},
-
-  checkIcons: {
-    flex: 1,
-    position: 'absolute',
-    marginLeft: 300,
-  },
-  taskIconPink: {
-    backgroundColor: '#fca5a5',
-    borderRadius: 50,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  taskTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
-    flexShrink: 1,
-    flexWrap: 'wrap',
-    maxWidth: 200,
-  },
-  taskDate: {
-    fontSize: 13,
-    color: '#9ca3af',
-  },
-  verticalIcons: {
-    marginLeft: 18,
-  },
-  noTaskText: {
-    fontSize: 14,
-    color: '#888888',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 30,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    width: 320,
-    maxHeight: 400,
-    alignItems: 'center',
-    elevation: 8,
-  },
-  modalTitle: {
-    fontWeight: 'bold',
-    fontSize: 18,
-    marginBottom: 12,
-  },
-  modalTaskRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  iconClose: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-  },
-  modalButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    width: '100%',
-  },
-  modalButtonText: {
-    fontSize: 16,
-    marginLeft: 12,
-    color: '#333',
-  },
-  modalCloseButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    zIndex: 2,
-    padding: 4,
-  },
-emptyTasksContainer: {
-  marginTop: 20,
-  gap: 13,
-   paddingHorizontal: 20,
-  
-   
-},
-
-taskBox: {
-  borderRadius: 20,
-  padding: 18,
-  elevation: 4,
-  shadowColor: '#000',
-  shadowOpacity: 0.1,
-  shadowRadius: 6,
-  alignItems: 'center',
-  paddingVertical: 20,
-},
-
-iconCircle: {
-  width: 50,
-  height: 50,
-  borderRadius: 25,
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginBottom: 10,
-  position: 'absolute',
-  marginRight: '80%',
-  marginTop: 15,
-},
-
-taskBoxTitle: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  marginBottom: 4,
-  marginRight: 80,
-},
-
-taskBoxSubtitle: {
-  fontSize: 11,
-  textAlign: 'center',
-  lineHeight: 18,
-  marginRight: 18,
-},
-taskBoxContent: {
-  marginLeft: 20,
-},
-taskBoxAdjust:{
-  marginLeft: 50,
-},
-tasktitle:{
- marginLeft: 60,
-},
+              searchbar:{
+                width: '90%',
+              },
+              searchWrapper:{
+                top: 27,
+                left: 17,
+              },
 
 
-});
+              
+              userInfo: {
+                flexDirection: 'row',
+                alignItems: 'center',
+              },
 
-export default LandingPage;
+              projectImage: {
+                width: 120,
+                height: 120,
+                borderRadius: 12,
+                marginTop: 10,
+                alignSelf: 'center',
+                position: 'absolute',
+                top: 20,
+                  
+                marginBottom: 10,
+              },
+              userIcon: {
+                backgroundColor: '#fca5a5',
+                borderRadius: 50,
+                width: 50,
+                height: 50,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 15,
+              },
+              greeting: {
+                fontSize: 20,
+                fontWeight: '600',
+                color: '#111827',
+              },
+              greetingBold: {
+                fontWeight: '700',
+              },
+              welcomeText: {
+                fontSize: 14,
+                color: '#9ca3af',
+              },
+              bellIcon: {
+                marginLeft: 10,
+              },
+              
+              
+              categoriesWrapper: {
+                marginTop: 60,
+                marginHorizontal: 18,
+              },
+              categoriesHeader: {
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 10,
+              },
+              categoriesTitle: {
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: '#333333',
+              },
+              seeAllText: {
+                fontSize: 14,
+                color: '#6C63FF',
+                fontWeight: 'bold',
+              },
+              projectsContainer: {
+                flexDirection: 'row',
+                marginBottom: 10,
+              },
+              projectCard: {
+                borderRadius: 24,
+                padding: 16,
+                width: 165,
+                height: 165,
+                marginRight: 16,
+                justifyContent: 'space-between',
+              },
+              projectCardPurple: {
+                backgroundColor: '#8b5cf6',
+              },
+              projectCardPink: {
+                backgroundColor: '#f87171',
+              },
+              projectCardGreen: {
+                backgroundColor: '#a80e54',
+              },
+              daysLeftContainer: {
+                backgroundColor: 'rgba(196, 181, 253, 0.4)',
+                borderRadius: 12,
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                alignSelf: 'flex-start',
+                flexDirection: 'row',
+                marginBottom: 6,
+                left: 75,
+              },
+              daysLeftTextPurple: {
+                fontSize: 10,
+                color: '#c4b5fd',
+                left: 5,
+              },
+              daysLeftTextPink: {
+                fontSize: 10,
+                color: '#fca5a5',
+                
+              },
+              userCategoryWrapper: {
+                marginLeft: 8,
+              },
+              projectTitle: {
+                fontSize: 16,
+                fontWeight: '600',
+                color: 'white',
+                marginVertical: 12,
+              },
+              progressRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: 4,
+              },
+              progressCircles: {
+                flexDirection: 'row',
+                width: 40,
+                justifyContent: 'space-between',
+                marginRight: 6,
+                
+              },
+              progressText: {
+                fontSize: 10,
+                color: '#c4b5fd',
+                marginLeft: 4,
+                marginRight: 4,
+                
+                
+              },
+              progressTextPink: {
+                fontSize: 10,
+                color: '#fca5a5',
+                marginLeft: 4,
+                marginRight: 4,
+                top: 10,
+              },
+              progressBarContainer: {
+                height: 8,
+                backgroundColor: '#e5e7eb',
+                borderRadius: 8,
+                overflow: 'hidden',
+                marginLeft: 6,
+                marginRight: 6,
+                flex: 1,
+              },
+              progressBar: {
+                height: 8,
+                borderRadius: 8,
+              },
+              lastTaskWrapper: {
+                marginTop: 30,
+                marginHorizontal: 18,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              
+              },
+              lastTaskTitle: {
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: '#333333',
+                marginBottom: 10,
+              },
+              taskItem: {
+                backgroundColor: 'white',
+                borderRadius: 20,
+                padding: 12,
+                paddingHorizontal: 20,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                top: 10,
+                marginBottom: 12,
+                marginHorizontal: 18,
+                shadowColor: '#000',
+                shadowOpacity: 0.05,
+                shadowRadius: 5,
+                elevation: 2,
+              },
+              taskInfo: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                flex: 1,
+              },
+
+              menuWrapper: {
+              position: 'absolute',
+              top: 15,
+              right: 10,
+              zIndex: 10,
+            },
+
+              checkIcons: {
+                flex: 1,
+                position: 'absolute',
+                marginLeft: 300,
+              },
+              taskIconPink: {
+                backgroundColor: '#fca5a5',
+                borderRadius: 50,
+                width: 50,
+                height: 50,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 12,
+              },
+              taskTitle: {
+                fontSize: 15,
+                fontWeight: '600',
+                color: '#111827',
+                flexShrink: 1,
+                flexWrap: 'wrap',
+                maxWidth: 200,
+              },
+              taskDate: {
+                fontSize: 13,
+                color: '#9ca3af',
+              },
+              verticalIcons: {
+                marginLeft: 18,
+              },
+              noTaskText: {
+                fontSize: 14,
+                color: '#888888',
+                fontStyle: 'italic',
+                textAlign: 'center',
+                marginTop: 30,
+              },
+              modalOverlay: {
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.2)',
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              modalContent: {
+                backgroundColor: '#fff',
+                borderRadius: 16,
+                padding: 24,
+                width: 320,
+                maxHeight: 400,
+                alignItems: 'center',
+                elevation: 8,
+              },
+              modalTitle: {
+                fontWeight: 'bold',
+                fontSize: 18,
+                marginBottom: 12,
+              },
+              modalTaskRow: {
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                marginBottom: 16,
+              },
+              iconClose: {
+                position: 'absolute',
+                top: 10,
+                right: 10,
+              },
+              modalButton: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 12,
+                width: '100%',
+              },
+              modalButtonText: {
+                fontSize: 16,
+                marginLeft: 12,
+                color: '#333',
+              },
+              modalCloseButton: {
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                zIndex: 2,
+                padding: 4,
+              },
+            emptyTasksContainer: {
+              marginTop: 20,
+              gap: 13,
+              paddingHorizontal: 20,
+            },
+
+            taskBox: {
+              borderRadius: 20,
+              padding: 18,
+              elevation: 4,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 6,
+              alignItems: 'center',
+              paddingVertical: 20,
+            },
+
+            iconCircle: {
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 10,
+              position: 'absolute',
+              marginRight: '80%',
+              marginTop: 15,
+            },
+
+            taskBoxTitle: {
+              fontWeight: 'bold',
+              marginBottom: 4,
+              marginRight: 20,
+            },
+
+            taskBoxSubtitle: {
+              fontSize: 11,
+              textAlign: 'center',
+              lineHeight: 18,
+              marginLeft: 20,
+            },
+            taskBoxContent: {
+              marginLeft: 20,
+            },
+
+            tasktitle:{
+            marginLeft: 50,
+
+            },
+
+            });
+
+            export default LandingPage;

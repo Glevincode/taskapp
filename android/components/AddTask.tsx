@@ -1,6 +1,6 @@
 import React, { useState, useCallback,useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Modal, ScrollView, RefreshControl, Pressable, Alert,Dimensions,
-  KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard
+  KeyboardAvoidingView, Platform,
  } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -17,9 +17,6 @@ import { useTheme } from './ThemeContext';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 
-
-
-// Helper to render category icons based on library
 function renderCategoryIcon(iconName: string, iconLib: string, size: number, color: string) {
   switch (iconLib) {
     case 'Ionicons':
@@ -71,15 +68,15 @@ const iconData = [
     id: '1',
     name: 'Business',
     color: '#f87171',
-    iconName: 'briefcase',    // This is a Feather icon!
-    iconLib: 'Feather'     // ✅ Fix: Feather library
+    iconName: 'briefcase',  
+    iconLib: 'Feather'     
   },
   {
     id: '2',
     name: 'Personal',
     color: '#6C63FF',
-    iconName: 'user',         // FontAwesome5 icon
-    iconLib: 'FontAwesome5',  // ✅ Fix: FontAwesome5 library
+    iconName: 'user',         
+    iconLib: 'FontAwesome5',  
   },
   {
     id: '3',
@@ -107,7 +104,7 @@ const [newCategoryName, setNewCategoryName] = useState('');
 const [newCategoryColor, setNewCategoryColor] = useState('#6C63FF'); // Default
 const [newCategoryIcon, setNewCategoryIcon] = useState('star'); // Example default
  const [bottomSheetAddVisible, setBottomAddSheetVisible] = useState(false);
- const [newCategory, setNewCategory] = useState(null);
+
  const [allCategories, setAllCategories] = useState([...iconData]);
 
 
